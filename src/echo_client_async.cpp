@@ -7,6 +7,7 @@
 #include <string>
 
 #include "boost/asio.hpp"
+#include "boost/core/ignore_unused.hpp"
 
 #include "utility.h"  // for printing endpoints
 
@@ -35,7 +36,7 @@ class Client {
   void OnConnect(boost::system::error_code ec, tcp::endpoint endpoint);
 
   void DoWrite();
-  void OnWrite(boost::system::error_code ec);
+  void OnWrite(boost::system::error_code ec, std::size_t length);
 
   void OnRead(boost::system::error_code ec, std::size_t length);
 
@@ -58,9 +59,9 @@ class Client {
 Client::Client(boost::asio::io_context& io_context,
                const std::string& host, const std::string& port)
 #if RESOLVE_ASYNC
-  : socket_(io_context), resolver_(io_context) {
+    : socket_(io_context), resolver_(io_context) {
 #else
-  : socket_(io_context) {
+    : socket_(io_context) {
 #endif
 
 #if RESOLVE_ASYNC
@@ -141,10 +142,13 @@ void Client::DoWrite() {
   boost::asio::async_write(socket_,
                            boost::asio::buffer(cin_buf_, len),
                            std::bind(&Client::OnWrite, this,
-                                     std::placeholders::_1));
+                                     std::placeholders::_1,
+                                     std::placeholders::_2));
 }
 
-void Client::OnWrite(boost::system::error_code ec) {
+void Client::OnWrite(boost::system::error_code ec, std::size_t length) {
+  boost::ignore_unused(length);
+
   if (!ec) {
     std::cout << "Reply is: ";
 
@@ -160,6 +164,9 @@ void Client::OnRead(boost::system::error_code ec, std::size_t length) {
     std::cout.write(buf_.data(), length);
     std::cout << std::endl;
   }
+
+  // Optionally, continue to write.
+  // DoWrite();
 }
 
 // -----------------------------------------------------------------------------
@@ -175,7 +182,7 @@ int main(int argc, char* argv[]) {
 
   boost::asio::io_context io_context;
 
-  Client client(io_context, host, port);
+  Client client{ io_context, host, port };
 
   io_context.run();
 

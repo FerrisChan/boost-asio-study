@@ -13,7 +13,7 @@
 ```cpp
 #define BOOST_ASIO_NO_DEPRECATED
 #include "boost/asio/io_context.hpp"
-#include "boost/asio/deadline_timer.hpp"
+#include "boost/asio/steady_timer.hpp"
 ...
 ```
 
@@ -62,7 +62,7 @@ endif(WIN32)
 
 虽然关于 Handler 的签名，文档里都有说明，但是直接定位到源码，更方便，也更精确。
 
-以 `deadline_timer.async_wait()` 为例，在 IDE 里定位到 `async_wait()` 的定义，代码（片段）如下：
+以 `steady_timer.async_wait()` 为例，在 IDE 里定位到 `async_wait()` 的定义，代码（片段）如下：
 ```cpp
   template <typename WaitHandler>
   BOOST_ASIO_INITFN_RESULT_TYPE(WaitHandler,
@@ -87,7 +87,7 @@ void Print(const boost::system::error_code& ec) {
 
 int main() {
   boost::asio::io_context ioc;
-  boost::asio::deadline_timer timer(ioc, boost::posix_time::seconds(3));
+  boost::asio::steady_timer timer(ioc, std::chrono::seconds(3));
 
   timer.async_wait(&Print);
 
@@ -113,11 +113,12 @@ private:
   }
 
 private:
-  boost::asio::deadline_timer timer_;
+  boost::asio::steady_timer timer_;
   int count_;
 };
 ```
 这个问题在习惯了引用的情况下，害苦了我，真是百思不得其解！也算是 Boost 比较坑的一个地方吧。
+2019/08/30: 实测 1.70 没有这个问题，可以用 const reference。也许是 1.66 的 bug 吧。
 
 ## Bind 占位符
 
